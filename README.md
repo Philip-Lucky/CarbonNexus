@@ -238,7 +238,7 @@ npm run dev
 npm run build
 ```
 
-The frontend application will be available at `http://localhost:5173` (Vite default).
+The frontend application will be available at `http://EC2 IP:5173` (Vite default).
 
 ### Backend Setup
 ```bash
@@ -259,7 +259,7 @@ cp .env.example .env
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The backend API will be available at `http://localhost:8000`. API documentation is automatically generated at `http://localhost:8000/docs` (Swagger UI).
+The backend API will be available at `http://EC2 IP:8000`. API documentation is automatically generated at `http://localhost:8000/docs` (Swagger UI).
 
 ### Database Setup
 ```bash
@@ -288,16 +288,16 @@ docker-compose down
 
 **Frontend (.env)**
 ```
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://EC2 IP:8000
 VITE_ENABLE_ANALYTICS=true
 ```
 
 **Backend (.env)**
 ```
-MONGODB_URI=mongodb://localhost:27017
+MONGODB_URI=mongodb://EC2 IP:27017
 DATABASE_NAME=carbonxinsight
 API_PORT=8000
-CORS_ORIGINS=http://localhost:5173
+CORS_ORIGINS=http://IP:5173
 LOG_LEVEL=INFO
 ```
 
