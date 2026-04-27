@@ -1,12 +1,12 @@
-# CarbonXInsight
+# CarbonNexus
 
 ## Overview
 
-CarbonXInsight is an internal analytics platform designed to provide real-time market intelligence and pricing analytics for coconut shell charcoal manufacturing and export operations. The application enables data-driven decision-making through comprehensive visualization of production metrics, market trends, and financial performance indicators.
+CarbonNexus is an internal analytics platform designed to provide real-time market intelligence and pricing analytics for coconut shell charcoal manufacturing and export operations. The application enables data-driven decision-making through comprehensive visualization of production metrics, market trends, and financial performance indicators.
 
 ## Business Context
 
-In the competitive landscape of coconut shell charcoal export, timely access to accurate market data and pricing trends is critical for maintaining competitive advantage. CarbonXInsight consolidates disparate data sources into a unified analytics interface, enabling stakeholders to:
+In the competitive landscape of coconut shell charcoal export, timely access to accurate market data and pricing trends is critical for maintaining competitive advantage. CarbonNexus consolidates disparate data sources into a unified analytics interface, enabling stakeholders to:
 
 - Monitor real-time pricing fluctuations across international markets
 - Track production efficiency and capacity utilization
@@ -16,7 +16,7 @@ In the competitive landscape of coconut shell charcoal export, timely access to 
 
 ## Problem Statement
 
-Prior to CarbonXInsight, the organization faced several operational challenges:
+Prior to CCarbonNexus, the organization faced several operational challenges:
 
 - **Data Fragmentation**: Market data, production metrics, and financial information existed in isolated systems
 - **Manual Reporting**: Executive reports required manual compilation from multiple sources, introducing delays and errors
@@ -24,7 +24,7 @@ Prior to CarbonXInsight, the organization faced several operational challenges:
 - **Decision Latency**: Strategic decisions were based on outdated or incomplete information
 - **Export Complexity**: No streamlined mechanism for generating presentation-ready reports
 
-CarbonXInsight addresses these challenges by providing a centralized, real-time analytics platform with automated reporting capabilities.
+CarbonNexus addresses these challenges by providing a centralized, real-time analytics platform with automated reporting capabilities.
 
 ## Core Features
 
@@ -157,7 +157,7 @@ Exported reports include:
 
 ## Project Structure
 ```
-carbonxinsight/
+CarbonNexus/
 ├── frontend/
 │   ├── public/
 │   │   └── index.html
@@ -238,8 +238,7 @@ npm run dev
 npm run build
 ```
 
-The frontend application will be available at `http://EC2 IP:5173` (Vite default).
-
+The frontend application will be available at ""
 ### Backend Setup
 ```bash
 cd backend
@@ -303,7 +302,7 @@ LOG_LEVEL=INFO
 
 ## Intended Usage
 
-CarbonXInsight is designed for internal use by the following stakeholder groups:
+CarbonNexus is designed for internal use by the following stakeholder groups:
 
 - **Executive Leadership**: Strategic decision-making based on market trends and financial performance
 - **Operations Managers**: Production planning and capacity optimization
@@ -329,9 +328,7 @@ The application is accessible only within the corporate network and requires aut
 - **Data Refresh Rate**: Real-time for critical metrics, hourly for historical trends
 - **Concurrent Users**: Supports up to 100 simultaneous users
 
-## Future Roadmap
-
-Planned enhancements include:
+## Current Enhancement:
 
 - **Predictive Analytics**: Machine learning models for demand forecasting and price prediction
 - **Mobile Application**: Native iOS and Android apps for executive dashboard access
