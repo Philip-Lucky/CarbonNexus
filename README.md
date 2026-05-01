@@ -281,6 +281,25 @@ docker-compose logs -f
 docker-compose down
 ```
 
+### Kubernetes Deployment Steps
+To deploy this to your EKS cluster, run the following commands:
+
+# Create the resources:
+```Bash
+kubectl apply -f carbon-nexus-eks.yaml
+```
+#Check the status of your pods:
+
+```Bash
+kubectl get pods -n carbon-nexus
+```
+# Get the Load Balancer URL:
+
+```Bash
+kubectl get ingress -n carbon-nexus
+```
+(It may take a few minutes for AWS to provision the ALB and populate the ADDRESS field).
+
 ## Configuration
 
 ### Environment Variables
@@ -329,7 +348,6 @@ The application is accessible only within the corporate network and requires aut
 - **Concurrent Users**: Supports up to 100 simultaneous users
 
 ## Current Enhancement:
-
 - **Predictive Analytics**: Machine learning models for demand forecasting and price prediction
 - **Mobile Application**: Native iOS and Android apps for executive dashboard access
 - **Advanced Alerting**: Configurable thresholds with email and SMS notifications
