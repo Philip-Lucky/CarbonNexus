@@ -1,0 +1,250 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: carbon-nexus
+---
+# ---------------------------------------------------------
+# SECRETS & CONFIGMAPS
+# ---------------------------------------------------------
+apiVersion: v1
+kind: Secret
+metadata:
+  name: carbon-nexus-secrets
+  namespace: carbon-nexus
+type: Opaque
+stringData:
+  # In a real environment, do not hardcode passwords in plaintext YAML.
+  # Use AWS Secrets Manager + External Secrets Operator or encrypt this file.
+  MONGO_INITDB_ROOT_USERNAME: admin
+  MONGO_INITDB_ROOT_PASSWORD: secure_password_here
+  MONGODB_URI: "mongodb://admin:secure_password_here@mongodb-svc.carbon-nexus.svc.cluster.local:27017"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carbon-nexus-config
+  namespace: carbon-nexus
+data:
+  DATABASE_NAME: "carbonxinsight"
+  API_PORT: "8000"
+  LOG_LEVEL: "INFO"
+  # Frontend Configs
+  VITE_API_BASE_URL: "/api" # Route traffic through the ingress path
+  VITE_ENABLE_ANALYTICS: "true"
+
+---
+# ---------------------------------------------------------
+# DATABASE TIER: MongoDB (StatefulSet)
+# ---------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-svc
+  namespace: carbon-nexus
+spec:
+  clusterIP: None # Headless service for StatefulSet
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: carbon-nexus
+spec:
+  serviceName: "mongodb-svc"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:5
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: carbon-nexus-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: carbon-nexus-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: gp3 # AWS EBS gp3 storage class
+        resources:
+          requests:
+            storage: 20Gi
+
+---
+# ---------------------------------------------------------
+# APPLICATION TIER: FastAPI Backend
+# ---------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: carbon-nexus
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: carbon-nexus
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          # REPLACE WITH YOUR ECR IMAGE URI
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/carbonnexus-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: carbon-nexus-config
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: carbon-nexus-secrets
+                  key: MONGODB_URI
+            - name: CORS_ORIGINS
+              value: "*" # Adjust for strict security in production
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /docs
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+---
+# ---------------------------------------------------------
+# CLIENT TIER: React Frontend
+# ---------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: carbon-nexus
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: carbon-nexus
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          # REPLACE WITH YOUR ECR IMAGE URI (Nginx + React build)
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/carbonnexus-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+
+---
+# ---------------------------------------------------------
+# INGRESS: AWS Application Load Balancer
+# ---------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: carbon-nexus-ingress
+  namespace: carbon-nexus
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Uncomment the lines below to enable HTTPS using AWS ACM
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:<REGION>:<AWS_ACCOUNT_ID>:certificate/<CERT_ID>
+    # alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  rules:
+    - http:
+        paths:
+          # Route /api/ traffic to the FastAPI backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-svc
+                port:
+                  number: 8000
+          # Route all other traffic (/) to the React frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port:
+                  number: 80
